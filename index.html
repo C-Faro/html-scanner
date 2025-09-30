@@ -17,11 +17,9 @@
 
   <script>
     // Replace with your Google Apps Script URL
-    const sheetURL = "https://script.google.com/macros/s/AKfycbzkBXpN4T40BQdw0idbWpN8GAWcF9QLAR6km-PJmuGcyw6OwQ_W8e1H8ZHjrxdpUAYP0g/exec";
     const sheetURL = "https://script.google.com/macros/s/AKfycbwps9KCEVhUMSFt9BqvNkYgMhUAwmahXSgwMelTQa5etWFqlRUlLC0NiL2BK_JaFacmcg/exec";
 
     function sendToSheet(data) {
-        fetch("https://script.google.com/macros/s/AKfycbzkBXpN4T40BQdw0idbWpN8GAWcF9QLAR6km-PJmuGcyw6OwQ_W8e1H8ZHjrxdpUAYP0g/exec", {
         fetch("https://script.google.com/macros/s/AKfycbwps9KCEVhUMSFt9BqvNkYgMhUAwmahXSgwMelTQa5etWFqlRUlLC0NiL2BK_JaFacmcg/exec", {
             method: "POST",
             mode: "no-cors",   // 👈 prevents CORS errors
@@ -86,3 +84,4 @@
   </script>
 </body>
 </html>
+
