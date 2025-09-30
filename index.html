@@ -2,7 +2,6 @@
 <html>
 <head>
   <title>Mobile QR/Barcode Scanner</title>
-  <script src="https://unpkg.com/html5-qrcode/minified/html5-qrcode.min.js"></script>
   <style>
     #reader {
       width: 100%;
@@ -33,6 +32,8 @@
   <div id="reader"></div>
   <p id="result">Scanner idle...</p>
 
+  <script src="https://unpkg.com/html5-qrcode/minified/html5-qrcode.min.js"></script>
+  
   <script>
     let html5QrCode;
     let useBarcodeMode = false; // false = QR, true = Barcode
@@ -99,3 +100,4 @@
   </script>
 </body>
 </html>
+
