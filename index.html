@@ -1,14 +1,14 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Clock In</title>
-  <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+  <title>Clock In System</title>
+  <script src="https://unpkg.com/html5-qrcode/minified/html5-qrcode.min.js"></script>
 </head>
 <body>
   <h1>Clock In System</h1>
 
   <!-- Camera scanner -->
-  <div id="reader" style="width:300px; height:300px;"></div>
+  <div id="reader" style="width:300px; height:300px; border:1px solid #ccc;"></div>
   <p id="result">Scan your card...</p>
 
   <!-- File upload option -->
@@ -17,35 +17,39 @@
 
   <script>
     // Replace with your Google Apps Script URL
-    const sheetURL = "https://script.google.com/macros/s/AKfycbz1oyIWe9WuTLt5tWNsPnRt3jIGi7U7aRoQMDmF781cT4VCoJ-lFTL3rVKu2n0iQPDpUQ/exec";
+    const sheetURL = "YOUR_GOOGLE_APPS_SCRIPT_WEBAPP_URL";
 
-    function sendToSheet(data) {
-        fetch("https://script.google.com/macros/s/AKfycbz1oyIWe9WuTLt5tWNsPnRt3jIGi7U7aRoQMDmF781cT4VCoJ-lFTL3rVKu2n0iQPDpUQ/exec", {
-            method: "POST",
-            mode: "no-cors",   // 👈 prevents CORS errors
-            headers: {
-                "Content-Type": "application/json"
-            },
-        body: JSON.stringify({ id: data })
-    })
-    .then(() => {
-        console.log("✅ Sent to Google Sheet:", data);
-        // you won’t get a response back in no-cors mode
-    })
-    .catch(err => {
+    // Track last scan time for each QR ID
+    const lastScans = {};
+
+    // Send scanned data to Google Sheet
+    function sendToSheet(id) {
+      fetch(sheetURL, {
+        method: "POST",
+        mode: "no-cors",   // avoids CORS errors
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ id: id })
+      }).then(() => {
+        console.log("✅ Sent to Google Sheet:", id);
+      }).catch(err => {
         console.error("❌ Error sending to Google Sheet:", err);
-        });
+      });
     }
 
-
+    // Handle a successful scan
     function onScanSuccess(decodedText) {
-      let people = {
-        "12345": "Coltin",
-        "67890": "Cassy"
-      };
+      const now = Date.now();
+      const lastTime = lastScans[decodedText] || 0;
 
-      let name = people[decodedText] || "Unknown";
-      sendToSheet(name, decodedText);
+      // Ignore if scanned within last 30 seconds
+      if (now - lastTime < 30000) return;
+
+      lastScans[decodedText] = now;
+      document.getElementById("result").innerText = "Scanned: " + decodedText;
+      sendToSheet(decodedText);
+      console.log("Scanned and sent:", decodedText);
     }
 
     // --- Camera Scanner ---
@@ -57,8 +61,8 @@
         html5QrCode.start(
           { deviceId: { exact: cameraId } },
           { fps: 10, qrbox: 250 },
-          (decodedText) => { onScanSuccess(decodedText); },
-          (errorMessage) => {}
+          onScanSuccess,
+          (errorMessage) => {} // ignore scan errors
         );
       }
     }).catch(err => {
@@ -68,11 +72,11 @@
     // --- File Upload Scanner ---
     document.getElementById("qr-input-file").addEventListener("change", e => {
       if (e.target.files.length == 0) return;
-
       const file = e.target.files[0];
       if (!file) return;
 
-      html5QrCode.scanFile(file, true)
+      const fileQrCode = new Html5Qrcode("reader"); // fresh instance for file scan
+      fileQrCode.scanFile(file, true)
         .then(decodedText => {
           onScanSuccess(decodedText);
         })
@@ -84,5 +88,3 @@
   </script>
 </body>
 </html>
-
-
