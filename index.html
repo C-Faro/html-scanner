@@ -17,21 +17,31 @@
 
   <script>
     // Replace with your Google Apps Script URL
-    const sheetURL = "https://script.google.com/macros/s/AKfycbxT0OqUyQxEIaoTY78ZCgGEjlS58dgJ-nnTiPl5EUiRXkXbqNDHNWRPA56B-gOK0fXIxw/exec";
+    const sheetURL = "https://script.google.com/macros/s/AKfycbxyzQsVoU7HM_eOtC5zSrUiol0K1gSTLhXlGcaEiEvLaajDHB5Tld--57AJ7NhqZ0mTBw/exec";
 
-    function sendToSheet(name, code) {
-      fetch(sheetURL, {
-        method: "POST",
-        body: JSON.stringify({ name, code }),
-        headers: { "Content-Type": "application/json" }
-      }).then(res => res.text())
-        .then(txt => document.getElementById("result").innerText = "Clocked in: " + name);
+    function sendToSheet(data) {
+        fetch("https://script.google.com/macros/s/AKfycbxyzQsVoU7HM_eOtC5zSrUiol0K1gSTLhXlGcaEiEvLaajDHB5Tld--57AJ7NhqZ0mTBw/exec", {
+            method: "POST",
+            mode: "no-cors",   // 👈 prevents CORS errors
+            headers: {
+                "Content-Type": "application/json"
+            },
+        body: JSON.stringify({ id: data })
+    })
+    .then(() => {
+        console.log("✅ Sent to Google Sheet:", data);
+        // you won’t get a response back in no-cors mode
+    })
+    .catch(err => {
+        console.error("❌ Error sending to Google Sheet:", err);
+        });
     }
+
 
     function onScanSuccess(decodedText) {
       let people = {
-        "12345": "Alice",
-        "67890": "Bob"
+        "12345": "Coltin",
+        "67890": "Cassy"
       };
 
       let name = people[decodedText] || "Unknown";
