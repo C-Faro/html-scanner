@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Clock In</title>
+  <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+</head>
+<body>
+  <h1>Clock In System</h1>
+
+  <!-- Camera scanner -->
+  <div id="reader" style="width:300px; height:300px;"></div>
+  <p id="result">Scan your card...</p>
+
+  <!-- File upload option -->
+  <h3>Or upload a QR code image:</h3>
+  <input type="file" id="qr-input-file" accept="image/*">
+
+  <script>
+    // Replace with your Google Apps Script URL
+    const sheetURL = "https://script.google.com/macros/s/AKfycbxT0OqUyQxEIaoTY78ZCgGEjlS58dgJ-nnTiPl5EUiRXkXbqNDHNWRPA56B-gOK0fXIxw/exec";
+
+    function sendToSheet(name, code) {
+      fetch(sheetURL, {
+        method: "POST",
+        body: JSON.stringify({ name, code }),
+        headers: { "Content-Type": "application/json" }
+      }).then(res => res.text())
+        .then(txt => document.getElementById("result").innerText = "Clocked in: " + name);
+    }
+
+    function onScanSuccess(decodedText) {
+      let people = {
+        "12345": "Alice",
+        "67890": "Bob"
+      };
+
+      let name = people[decodedText] || "Unknown";
+      sendToSheet(name, decodedText);
+    }
+
+    // --- Camera Scanner ---
+    const html5QrCode = new Html5Qrcode("reader");
+
+    Html5Qrcode.getCameras().then(cameras => {
+      if (cameras && cameras.length > 0) {
+        const cameraId = cameras[0].id;
+        html5QrCode.start(
+          { deviceId: { exact: cameraId } },
+          { fps: 10, qrbox: 250 },
+          (decodedText) => { onScanSuccess(decodedText); },
+          (errorMessage) => {}
+        );
+      }
+    }).catch(err => {
+      console.error("Camera error:", err);
+    });
+
+    // --- File Upload Scanner ---
+    document.getElementById("qr-input-file").addEventListener("change", e => {
+      if (e.target.files.length == 0) return;
+
+      const file = e.target.files[0];
+      if (!file) return;
+
+      html5QrCode.scanFile(file, true)
+        .then(decodedText => {
+          onScanSuccess(decodedText);
+        })
+        .catch(err => {
+          document.getElementById("result").innerText = "Could not read QR from image.";
+          console.error("File scan error:", err);
+        });
+    });
+  </script>
+</body>
+</html>
