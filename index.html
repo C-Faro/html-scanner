@@ -1,88 +1,101 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Clock In</title>
-  <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+  <title>Mobile QR/Barcode Scanner</title>
+  <script src="https://unpkg.com/html5-qrcode/minified/html5-qrcode.min.js"></script>
+  <style>
+    #reader {
+      width: 100%;
+      max-width: 400px;
+      margin: 20px auto;
+      border: 2px solid #ccc;
+    }
+    button {
+      margin: 5px;
+      padding: 10px 20px;
+      font-size: 16px;
+    }
+    #result {
+      text-align: center;
+      margin-top: 10px;
+      font-weight: bold;
+    }
+  </style>
 </head>
 <body>
-  <h1>Clock In System</h1>
+  <h2 style="text-align:center">Clock-In Scanner</h2>
 
-  <!-- Camera scanner -->
-  <div id="reader" style="width:300px; height:300px;"></div>
-  <p id="result">Scan your card...</p>
+  <div style="text-align:center">
+    <button id="start-scan">Start Scan</button>
+    <button id="toggle-mode">Toggle QR/Barcode Mode</button>
+  </div>
 
-  <!-- File upload option -->
-  <h3>Or upload a QR code image:</h3>
-  <input type="file" id="qr-input-file" accept="image/*">
+  <div id="reader"></div>
+  <p id="result">Scanner idle...</p>
 
   <script>
-    // Replace with your Google Apps Script URL
+    let html5QrCode;
+    let useBarcodeMode = false; // false = QR, true = Barcode
+    let cameraId = null;
+
+    // Replace this with your Apps Script URL
     const sheetURL = "https://script.google.com/macros/s/AKfycbwps9KCEVhUMSFt9BqvNkYgMhUAwmahXSgwMelTQa5etWFqlRUlLC0NiL2BK_JaFacmcg/exec";
 
-    function sendToSheet(data) {
-        fetch("https://script.google.com/macros/s/AKfycbwps9KCEVhUMSFt9BqvNkYgMhUAwmahXSgwMelTQa5etWFqlRUlLC0NiL2BK_JaFacmcg/exec", {
-            method: "POST",
-            mode: "no-cors",   // 👈 prevents CORS errors
-            headers: {
-                "Content-Type": "application/json"
-            },
-        body: JSON.stringify({ id: data })
-    })
-    .then(() => {
-        console.log("✅ Sent to Google Sheet:", data);
-        // you won’t get a response back in no-cors mode
-    })
-    .catch(err => {
-        console.error("❌ Error sending to Google Sheet:", err);
-        });
+    function sendToSheet(code) {
+      fetch(sheetURL, {
+        method: "POST",
+        mode: "no-cors",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: code })
+      });
+      document.getElementById("result").innerText = "Scanned: " + code;
     }
-
 
     function onScanSuccess(decodedText) {
-      let people = {
-        "12345": "Coltin",
-        "67890": "Cassy"
-      };
-
-      let name = people[decodedText] || "Unknown";
-      sendToSheet(name, decodedText);
+      sendToSheet(decodedText);
+      html5QrCode.stop(); // stop scanning after successful scan
+      document.getElementById("result").innerText = "Scanned: " + decodedText;
     }
 
-    // --- Camera Scanner ---
-    const html5QrCode = new Html5Qrcode("reader");
-
-    Html5Qrcode.getCameras().then(cameras => {
-      if (cameras && cameras.length > 0) {
-        const cameraId = cameras[0].id;
-        html5QrCode.start(
-          { deviceId: { exact: cameraId } },
-          { fps: 10, qrbox: 250 },
-          (decodedText) => { onScanSuccess(decodedText); },
-          (errorMessage) => {}
-        );
-      }
-    }).catch(err => {
-      console.error("Camera error:", err);
+    // Toggle QR / Barcode mode
+    document.getElementById("toggle-mode").addEventListener("click", () => {
+      useBarcodeMode = !useBarcodeMode;
+      document.getElementById("result").innerText = "Mode: " + (useBarcodeMode ? "Barcode" : "QR");
     });
 
-    // --- File Upload Scanner ---
-    document.getElementById("qr-input-file").addEventListener("change", e => {
-      if (e.target.files.length == 0) return;
+    // Start Scan button
+    document.getElementById("start-scan").addEventListener("click", async () => {
+      if (!html5QrCode) html5QrCode = new Html5Qrcode("reader");
 
-      const file = e.target.files[0];
-      if (!file) return;
+      // Get cameras only once
+      if (!cameraId) {
+        try {
+          const devices = await Html5Qrcode.getCameras();
+          if (devices && devices.length) {
+            cameraId = devices[devices.length - 1].id; // usually back camera
+          } else {
+            alert("No camera found.");
+            return;
+          }
+        } catch (err) {
+          alert("Camera error: " + err);
+          return;
+        }
+      }
 
-      html5QrCode.scanFile(file, true)
-        .then(decodedText => {
-          onScanSuccess(decodedText);
-        })
-        .catch(err => {
-          document.getElementById("result").innerText = "Could not read QR from image.";
-          console.error("File scan error:", err);
-        });
+      const qrBoxSize = useBarcodeMode 
+        ? { width: 400, height: 150 }  // wide rectangle for barcodes
+        : { width: 250, height: 250 }; // square for QR codes
+
+      html5QrCode.start(
+        { deviceId: { exact: cameraId } },
+        { fps: 10, qrbox: qrBoxSize },
+        onScanSuccess,
+        errorMessage => {
+          // optional: console.log("Scan error:", errorMessage);
+        }
+      );
     });
   </script>
 </body>
 </html>
-
-
